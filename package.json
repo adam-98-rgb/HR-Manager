@@ -23,13 +23,17 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.0",
     "@electron-toolkit/utils": "^3.0.0",
+    "@headlessui/react": "^2.2.9",
+    "@react-pdf/renderer": "^4.3.2",
     "clsx": "^2.1.1",
     "framer-motion": "^12.34.0",
+    "jspdf": "^4.1.0",
     "lucide-react": "^0.563.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "sqlite3": "^5.1.7",
-    "tailwind-merge": "^3.4.0"
+    "tailwind-merge": "^3.4.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config": "^1.0.2",

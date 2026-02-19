@@ -1,19 +1,24 @@
 import { MoreHorizontal, X, Mail, Phone } from 'lucide-react'
 import { Employee } from '../data/mockData'
+import { getIsFemale } from '../lib/utils'
 
 interface EmployeeCardProps {
     employee: Employee
     onClick: () => void
     onEdit: (e: React.MouseEvent) => void
     onDelete: (e: React.MouseEvent) => void
+    refreshKey?: number
 }
 
-export default function EmployeeCard({ employee, onClick, onEdit, onDelete }: EmployeeCardProps): JSX.Element {
+export default function EmployeeCard({ employee, onClick, onEdit, onDelete, refreshKey }: EmployeeCardProps): JSX.Element {
     const getImageUrl = (path: string) => {
         if (!path) return ''
-        if (path.startsWith('http') || path.startsWith('/storage') || path.startsWith('/icons')) return path
+        if (path.startsWith('http') || path.startsWith('/storage') || path.startsWith('/icons')) {
+            return refreshKey && path.startsWith('/storage') ? `${path}?t=${refreshKey}` : path
+        }
         if (path.includes(':') || path.startsWith('/') || path.startsWith('\\')) {
-            return `file:///${path.replace(/\\/g, '/')}`
+            const url = `file:///${path.replace(/\\/g, '/')}`
+            return refreshKey ? `${url}?t=${refreshKey}` : url
         }
         return path
     }
@@ -45,19 +50,27 @@ export default function EmployeeCard({ employee, onClick, onEdit, onDelete }: Em
 
                 <div className="flex items-start gap-6 mb-4">
                     <div className="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 overflow-hidden p-1 shrink-0 ring-4 ring-white/5 group-hover:ring-[#ffcc4d]/20 transition-all duration-500">
-                        {employee.photo ? (
-                            <img
-                                src={getImageUrl(employee.photo)}
-                                alt={employee.fullName}
-                                className="w-full h-full object-cover rounded-xl bg-white/5 scale-110 group-hover:scale-100 transition-transform duration-700"
-                            />
-                        ) : (
-                            <img
-                                src={getImageUrl(`/icons/${employee.gender === 'Female' ? 'female.png' : 'male.png'}`)}
-                                alt={employee.fullName}
-                                className="w-full h-full object-cover rounded-xl bg-white/5 opacity-80"
-                            />
-                        )}
+                        {(() => {
+                            const isFemale = getIsFemale(employee.gender);
+                            const defaultIcon = `/icons/${isFemale ? 'female.png' : 'male.png'}`;
+                            return employee.photo ? (
+                                <img
+                                    src={getImageUrl(employee.photo)}
+                                    alt={employee.fullName}
+                                    className="w-full h-full object-cover rounded-xl bg-white/5 scale-110 group-hover:scale-100 transition-transform duration-700"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).onerror = null;
+                                        (e.target as HTMLImageElement).src = defaultIcon;
+                                    }}
+                                />
+                            ) : (
+                                <img
+                                    src={defaultIcon}
+                                    alt={employee.fullName}
+                                    className="w-full h-full object-cover rounded-xl bg-white/5 opacity-80"
+                                />
+                            );
+                        })()}
                     </div>
                     <div className="flex flex-col justify-center h-20">
                         <span className="text-sm font-black text-[#ffcc4d] bg-[#ffcc4d]/10 px-3 py-1 rounded-lg uppercase tracking-wider shadow-inner inline-block w-fit">

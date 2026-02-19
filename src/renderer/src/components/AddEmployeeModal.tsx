@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { getIsFemale } from '../lib/utils'
 
 interface AddEmployeeModalProps {
     isOpen: boolean
@@ -36,12 +37,29 @@ export default function AddEmployeeModal({ isOpen, onClose, onAdd, defaultCompan
 
     // Sync with props when modal opens or props change
     useEffect(() => {
+        const fetchNextId = async () => {
+            if (isOpen && defaultCompany) {
+                try {
+                    const nextId = await window.api.db.getNextEmployeeId({ companyName: defaultCompany })
+                    setFormData(prev => ({
+                        ...prev,
+                        id: nextId,
+                        company: defaultCompany,
+                        status: defaultStatus
+                    }))
+                } catch (error) {
+                    console.error('Failed to fetch next ID:', error)
+                    setFormData(prev => ({
+                        ...prev,
+                        company: defaultCompany,
+                        status: defaultStatus
+                    }))
+                }
+            }
+        }
+
         if (isOpen) {
-            setFormData(prev => ({
-                ...prev,
-                company: defaultCompany,
-                status: defaultStatus
-            }))
+            fetchNextId()
             setPhotoPreview('') // Clear preview when modal opens
         }
     }, [isOpen, defaultCompany, defaultStatus])
@@ -102,10 +120,14 @@ export default function AddEmployeeModal({ isOpen, onClose, onAdd, defaultCompan
                                                 src={photoPreview || formData.photo}
                                                 alt="Preview"
                                                 className="w-full h-full object-cover rounded-[18px]"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).onerror = null;
+                                                    (e.target as HTMLImageElement).src = `/icons/${getIsFemale(formData.gender) ? 'female.png' : 'male.png'}`;
+                                                }}
                                             />
                                         ) : (
                                             <img
-                                                src={`/icons/${formData.gender === 'Female' ? 'female.png' : 'male.png'}`}
+                                                src={`/icons/${getIsFemale(formData.gender) ? 'female.png' : 'male.png'}`}
                                                 alt="Preview"
                                                 className="w-full h-full object-cover rounded-[18px]"
                                             />
@@ -316,13 +338,18 @@ export default function AddEmployeeModal({ isOpen, onClose, onAdd, defaultCompan
                                         </div>
                                         <div>
                                             <label className={labelClasses}>Motif</label>
-                                            <input
-                                                type="text"
+                                            <select
                                                 className={inputClasses}
-                                                placeholder="Motif de sortie"
                                                 value={formData.motif || ''}
                                                 onChange={(e) => setFormData({ ...formData, motif: e.target.value })}
-                                            />
+                                            >
+                                                <option value="" className="bg-[#1e1e1e]">Sélectionner un motif</option>
+                                                <option value="Démission" className="bg-[#1e1e1e]">Démission</option>
+                                                <option value="Licenciement" className="bg-[#1e1e1e]">Licenciement</option>
+                                                <option value="Licenciement FG" className="bg-[#1e1e1e]">Licenciement FG</option>
+                                                <option value="Abandon de Poste" className="bg-[#1e1e1e]">Abandon de Poste</option>
+                                                <option value="Mutation" className="bg-[#1e1e1e]">Mutation</option>
+                                            </select>
                                         </div>
                                     </>
                                 )}

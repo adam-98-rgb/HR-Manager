@@ -5,12 +5,20 @@ import DashboardPage from './pages/DashboardPage'
 import SetupPage from './pages/SetupPage'
 import LoginPage from './pages/LoginPage'
 import SettingsPage from './pages/SettingsPage'
+import RecruitmentPage from './pages/RecruitmentPage'
+import PayrollPage from './pages/PayrollPage'
+import TransportPage from './pages/TransportPage'
+import { LanguageProvider } from './contexts/LanguageContext'
+
+import AssurancePage from './pages/AssurancePage'
+
+export type PageId = 'dashboard' | 'people' | 'settings' | 'hiring' | 'payroll' | 'transport' | 'assurance'
 
 type AuthState = 'loading' | 'setup' | 'login' | 'authenticated'
 
-function App(): JSX.Element {
+function AppContent(): JSX.Element {
     const [authState, setAuthState] = useState<AuthState>('loading')
-    const [currentPage, setCurrentPage] = useState<'dashboard' | 'people' | 'settings'>('dashboard')
+    const [currentPage, setCurrentPage] = useState<PageId>('dashboard')
     const [user, setUser] = useState<any>(null)
 
     useEffect(() => {
@@ -60,11 +68,23 @@ function App(): JSX.Element {
     }
 
     return (
-        <Layout onNavigate={setCurrentPage} currentPage={currentPage} user={user}>
+        <Layout onNavigate={(page) => setCurrentPage(page as PageId)} currentPage={currentPage} user={user}>
             {currentPage === 'dashboard' && <DashboardPage user={user} />}
             {currentPage === 'people' && <EmployeesPage />}
+            {currentPage === 'hiring' && <RecruitmentPage />}
+            {currentPage === 'payroll' && <PayrollPage />}
+            {currentPage === 'transport' && <TransportPage />}
+            {currentPage === 'assurance' && <AssurancePage />}
             {currentPage === 'settings' && <SettingsPage currentUser={user} />}
         </Layout>
+    )
+}
+
+function App(): JSX.Element {
+    return (
+        <LanguageProvider>
+            <AppContent />
+        </LanguageProvider>
     )
 }
 

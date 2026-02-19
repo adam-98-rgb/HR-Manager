@@ -1,6 +1,6 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join, extname } from 'path'
-import { copyFileSync, mkdirSync, existsSync } from 'fs'
+import { copyFileSync, mkdirSync, existsSync, writeFileSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import * as db from './db'
@@ -25,8 +25,20 @@ function createWindow(): void {
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
-    return { action: 'deny' }
+    const url = details.url
+    // Allow about:blank and empty URLs for local window creation (printing)
+    if (url === 'about:blank' || url === '' || url.startsWith('about:')) {
+      return { action: 'allow' }
+    }
+    
+    // Only open external http/https links in the default browser browser
+    if (url.startsWith('http') && !url.includes('localhost') && !url.includes('127.0.0.1')) {
+      shell.openExternal(url)
+      return { action: 'deny' }
+    }
+    
+    // Default to allowing local windows
+    return { action: 'allow' }
   })
 
   // HMR for renderer base on electron-vite cli.
@@ -110,6 +122,17 @@ app.whenReady().then(async () => {
     return await db.getCompanies()
   })
 
+  ipcMain.handle('db:getAssuranceEmployees', async () => {
+    return await db.getAssuranceEmployees()
+  })
+
+
+  ipcMain.handle('db:updateAssuranceEmployee', async (_, { id, companyName, data }) => {
+    return await db.updateAssuranceEmployee(id, companyName, data)
+  })
+  ipcMain.handle('db:setDefaultAssuranceCompany', async (_, { id }) => {
+    return await db.setDefaultAssuranceCompany(id)
+  })
 
 
   ipcMain.handle('db:getEmployees', async (_, params) => {
@@ -124,6 +147,22 @@ app.whenReady().then(async () => {
       ...emp,
       photo: emp.photo || emp.avatar
     }))
+  })
+
+  ipcMain.handle('db:getPayrollEmployees', async (_, { companyName, status }) => {
+    const employees = await db.getPayrollEmployees(companyName, status)
+    return employees.map(emp => ({
+      ...emp,
+      photo: emp.photo || emp.avatar
+    }))
+  })
+
+  ipcMain.handle('db:getNextEmployeeId', async (_, { companyName }) => {
+    return await db.getNextEmployeeId(companyName)
+  })
+
+  ipcMain.handle('db:updatePayrollData', async (_, { id, companyName, status, data }) => {
+    return await db.updatePayrollData(id, companyName, status, data)
   })
 
   ipcMain.handle('db:saveEmployee', async (_, employee) => {
@@ -342,6 +381,23 @@ app.whenReady().then(async () => {
     return await db.deleteAssuranceCompany(id)
   })
 
+  // Assurance Records IPC
+  ipcMain.handle('db:getAssurances', async (_, { companyName }) => {
+    return await db.getAssurances(companyName)
+  })
+
+  ipcMain.handle('db:addAssurance', async (_, { record }) => {
+    return await db.addAssurance(record)
+  })
+
+  ipcMain.handle('db:updateAssurance', async (_, { id, record }) => {
+    return await db.updateAssurance(id, record)
+  })
+
+  ipcMain.handle('db:deleteAssurance', async (_, { id }) => {
+    return await db.deleteAssurance(id)
+  })
+
   ipcMain.handle('file:saveCompanyDocument', async (_, { companyName, filePath }) => {
     try {
         if (!existsSync(filePath)) throw new Error('File not found')
@@ -363,6 +419,144 @@ app.whenReady().then(async () => {
         console.error('Failed to save company document:', error)
         throw error
     }
+  })
+
+  ipcMain.handle('file:saveEmployeeDocument', async (_, { companyName, employeeId, filePath }) => {
+    try {
+        if (!existsSync(filePath)) throw new Error('File not found')
+        
+        const storagePath = join(process.cwd(), 'src', 'renderer', 'public', 'storage')
+        const companyDirName = companyName.replace(/[^a-z0-9]/gi, '_').toLowerCase()
+        const docsDir = join(storagePath, companyDirName, 'employees_documents', employeeId)
+        
+        if (!existsSync(docsDir)) mkdirSync(docsDir, { recursive: true })
+        
+        const safeOriginalName = filePath.split(/[/\\]/).pop()?.replace(/[^a-z0-9.]/gi, '_') || 'doc'
+        const finalFileName = `${Date.now()}_${safeOriginalName}`
+        const destPath = join(docsDir, finalFileName)
+        
+        copyFileSync(filePath, destPath)
+        
+        return `/storage/${companyDirName}/employees_documents/${employeeId}/${finalFileName}`
+    } catch (error) {
+        console.error('Failed to save employee document:', error)
+        throw error
+    }
+  })
+
+  ipcMain.handle('db:getEmployeeDocuments', async (_, { employeeId, companyName }) => {
+    return await db.getEmployeeDocuments(employeeId, companyName)
+  })
+
+  ipcMain.handle('db:addEmployeeDocument', async (_, { employeeId, companyName, name, path }) => {
+    return await db.addEmployeeDocument(employeeId, companyName, name, path)
+  })
+
+  ipcMain.handle('db:deleteEmployeeDocument', async (_, { id }) => {
+    return await db.deleteEmployeeDocument(id)
+  })
+
+  // Candidate IPC
+  ipcMain.handle('db:addCandidate', async (_, { candidate, companyName }) => {
+     return await db.addCandidate(candidate, companyName)
+  })
+
+  ipcMain.handle('db:getCandidates', async (_, { companyName }) => {
+     return await db.getCandidates(companyName)
+  })
+
+  ipcMain.handle('db:deleteCandidate', async (_, { id, companyName }) => {
+     // Also delete folder
+     const storagePath = join(process.cwd(), 'src', 'renderer', 'public', 'storage')
+     const companyDirName = companyName.replace(/[^a-z0-9]/gi, '_').toLowerCase()
+     const candidateDir = join(storagePath, companyDirName, 'candidates', id)
+     
+     if (existsSync(candidateDir)) {
+          const fs = require('fs')
+          fs.rmSync(candidateDir, { recursive: true, force: true })
+     }
+
+     return await db.deleteCandidate(id, companyName)
+  })
+
+  ipcMain.handle('file:saveCandidateDocument', async (_, { companyName, filePath, docType, candidateId }) => {
+    try {
+        if (!existsSync(filePath)) throw new Error('File not found')
+        
+        const storagePath = join(process.cwd(), 'src', 'renderer', 'public', 'storage')
+        const companyDirName = companyName.replace(/[^a-z0-9]/gi, '_').toLowerCase()
+        // Use a temporary ID if candidateId not provided? But UI should provide one (e.g. timestamp)
+        const safeId = candidateId || 'temp'
+        const docsDir = join(storagePath, companyDirName, 'candidates', safeId)
+        
+        if (!existsSync(docsDir)) mkdirSync(docsDir, { recursive: true })
+        
+        const extension = extname(filePath)
+        const fileName = `${docType}${extension}` // 'contrat.pdf', 'eng_domicile.pdf'
+        const destPath = join(docsDir, fileName)
+        
+        copyFileSync(filePath, destPath)
+        
+        return `/storage/${companyDirName}/candidates/${safeId}/${fileName}`
+    } catch (error) {
+        console.error('Failed to save candidate document:', error)
+        throw error
+    }
+  })
+
+  ipcMain.handle('db:validateCandidate', async (_, { candidate, companyName }) => {
+    const nextId = await db.getNextEmployeeId(companyName)
+    const storagePath = join(process.cwd(), 'src', 'renderer', 'public', 'storage')
+    const companyDirName = companyName.replace(/[^a-z0-9]/gi, '_').toLowerCase()
+    
+    // Paths
+    const candidateDir = join(storagePath, companyDirName, 'candidates', candidate.id)
+    const employeeDocsDir = join(storagePath, companyDirName, 'employees_documents', nextId)
+    
+    let newContratPath = ''
+    let newEngDomicilePath = ''
+
+    if (existsSync(candidateDir)) {
+        if (!existsSync(employeeDocsDir)) mkdirSync(employeeDocsDir, { recursive: true })
+        
+        // Move Contract
+        if (candidate.contratPath) {
+             const oldPath = join(process.cwd(), 'src', 'renderer', 'public', candidate.contratPath)
+             if (existsSync(oldPath)) {
+                 const newName = `Contrat${extname(oldPath)}`
+                 const destPath = join(employeeDocsDir, newName)
+                 copyFileSync(oldPath, destPath)
+                 newContratPath = `/storage/${companyDirName}/employees_documents/${nextId}/${newName}`
+             }
+        }
+
+        // Move Eng Domicile
+        if (candidate.engDomicilePath) {
+             const oldPath = join(process.cwd(), 'src', 'renderer', 'public', candidate.engDomicilePath)
+             if (existsSync(oldPath)) {
+                 const newName = `Eng_Domicile${extname(oldPath)}`
+                 const destPath = join(employeeDocsDir, newName)
+                 copyFileSync(oldPath, destPath)
+                 newEngDomicilePath = `/storage/${companyDirName}/employees_documents/${nextId}/${newName}`
+             }
+        }
+
+        // Clean up candidate dir
+        const fs = require('fs')
+        try {
+            fs.rmSync(candidateDir, { recursive: true, force: true })
+        } catch (e) { console.error('Failed to remove candidate dir', e)}
+    }
+
+    const newEmployeeData = {
+        ...candidate,
+        id: nextId,
+        contratPath: newContratPath,
+        engDomicilePath: newEngDomicilePath
+    }
+
+    // Call transfer in DB
+    return await db.transferCandidateToEmployee(candidate.id, companyName, newEmployeeData)
   })
 
   ipcMain.handle('file:download', async (_, { path }) => {
@@ -396,6 +590,90 @@ app.whenReady().then(async () => {
          fullPath = join(process.cwd(), 'src', 'renderer', 'public', path)
      }
      shell.openPath(fullPath)
+  })
+
+  // Transport IPC Handlers
+  ipcMain.handle('db:getTransportEmployees', async () => {
+    return await db.getTransportEmployees()
+  })
+
+  ipcMain.handle('db:addTransportEmployee', async (_, { emp }) => {
+    return await db.addTransportEmployee(emp)
+  })
+
+  ipcMain.handle('db:updateTransportEmployee', async (_, { id, emp }) => {
+    return await db.updateTransportEmployee(id, emp)
+  })
+
+  ipcMain.handle('db:deleteTransportEmployee', async (_, { id }) => {
+    return await db.deleteTransportEmployee(id)
+  })
+
+  // Transport Group IPC Handlers
+  ipcMain.handle('db:getTransportGroups', async () => {
+    return await db.getTransportGroups()
+  })
+
+  ipcMain.handle('db:addTransportGroup', async (_, { group }) => {
+    return await db.addTransportGroup(group)
+  })
+
+  ipcMain.handle('db:updateTransportGroup', async (_, { id, group }) => {
+    return await db.updateTransportGroup(id, group)
+  })
+
+  ipcMain.handle('db:deleteTransportGroup', async (_, { id }) => {
+    return await db.deleteTransportGroup(id)
+  })
+
+  ipcMain.handle('window:openPrint', async (_, { html }) => {
+    const printWin = new BrowserWindow({
+      width: 1200,
+      height: 800,
+      show: false,
+      autoHideMenuBar: true,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true
+      }
+    })
+
+    printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+    
+    printWin.once('ready-to-show', () => {
+      printWin.show()
+    })
+
+    return true
+  })
+
+  ipcMain.handle('app:printToPDF', async (_, { filename }) => {
+    const win = BrowserWindow.getFocusedWindow()
+    if (!win) return false
+
+    try {
+      const data = await win.webContents.printToPDF({
+        printBackground: true,
+        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+        pageSize: 'A4',
+        landscape: false
+      })
+
+      const result = await dialog.showSaveDialog(win, {
+        title: 'Enregistrer le PDF',
+        defaultPath: filename || 'Rapport.pdf',
+        filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+      })
+
+      if (!result.canceled && result.filePath) {
+        writeFileSync(result.filePath, data)
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error('Failed to generate PDF:', error)
+      return false
+    }
   })
 
   await db.initDb()

@@ -102,3 +102,123 @@ ul {
 .animate-fade-in {
     animation: fadeIn 0.4s ease-out forwards;
 }
+
+@media print {
+    @page {
+        margin: 8mm;
+        size: A4 portrait;
+    }
+
+    body {
+        background: white !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    #root {
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    .print-hidden,
+    .print\:hidden {
+        display: none !important;
+    }
+
+    .print-block,
+    .print\:block {
+        display: block !important;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    /* Preserve colors in PDF */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Print layout adjustments */
+    .print\:m-0 {
+        margin: 0 !important;
+    }
+
+    .print\:p-0 {
+        padding: 0 !important;
+    }
+
+    .print\:mt-0 {
+        margin-top: 0 !important;
+    }
+
+    .print\:pt-0 {
+        padding-top: 0 !important;
+    }
+
+    .print\:border-none {
+        border: none !important;
+    }
+
+    .print\:bg-white {
+        background: white !important;
+    }
+
+    .print\:text-black {
+        color: black !important;
+    }
+
+    .print\:border-black {
+        border-color: black !important;
+    }
+
+    .print\:break-inside-avoid {
+        break-inside: avoid;
+    }
+
+    .print\:grid-cols-2 {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 15px !important;
+    }
+
+    .print\:opacity-100 {
+        opacity: 1 !important;
+    }
+
+    /* Correctly escaped utility classes for manual index.css */
+    .print\:text-\[6\.5px\] {
+        font-size: 6.5px !important;
+        line-height: 1.1 !important;
+    }
+
+    .print\:text-\[7px\] {
+        font-size: 7px !important;
+        line-height: 1.1 !important;
+    }
+
+    .print\:text-\[7\.5px\] {
+        font-size: 7.5px !important;
+        line-height: 1.1 !important;
+    }
+
+    .print\:text-\[8px\] {
+        font-size: 8px !important;
+        line-height: 1.2 !important;
+    }
+
+    .print\:text-\[9px\] {
+        font-size: 9px !important;
+        line-height: 1.2 !important;
+    }
+
+    .print\:space-y-1 {
+        margin-top: 0.25rem !important;
+    }
+
+    .print\:border-b-thin {
+        border-bottom: 0.1mm solid #000 !important;
+    }
+}

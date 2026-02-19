@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Users, Building2, Plus, Trash2, Edit2, Shield, Building, ChevronLeft, ChevronRight, Mail, User as UserIcon, Phone, MapPin, FileText, Upload, X, File, Download } from 'lucide-react'
+import { Users, Building2, Plus, Trash2, Edit2, Shield, Building, ChevronLeft, ChevronRight, Mail, User as UserIcon, Phone, MapPin, FileText, Upload, X, File, Download, Star } from 'lucide-react'
 import { cn } from '../lib/utils'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal'
 
@@ -22,6 +22,7 @@ interface Company {
     ice?: string
     if_num?: string
     cnss?: string
+    rc?: string
     representant?: string
 }
 
@@ -57,7 +58,7 @@ export default function SettingsPage({ currentUser }: { currentUser: any }) {
 
     // Form States
     const [userForm, setUserForm] = useState({ name: '', email: '', password: '', role: 'User', gender: 'Male', phone: '', picture: '', companyIds: [] as number[] })
-    const [companyForm, setCompanyForm] = useState<any>({ name: '', address: '', ice: '', if_num: '', cnss: '', representant: '', logo: '' })
+    const [companyForm, setCompanyForm] = useState<any>({ name: '', address: '', ice: '', if_num: '', cnss: '', rc: '', representant: '', logo: '' })
 
     // Assurance State
     const [assuranceCompanies, setAssuranceCompanies] = useState<any[]>([])
@@ -247,7 +248,7 @@ export default function SettingsPage({ currentUser }: { currentUser: any }) {
 
     const openAddCompanyModal = () => {
         setEditingCompany(null)
-        setCompanyForm({ name: '', address: '', ice: '', if_num: '', cnss: '', representant: '', logo: '' })
+        setCompanyForm({ name: '', address: '', ice: '', if_num: '', cnss: '', rc: '', representant: '', logo: '' })
         setIsCompanyModalOpen(true)
     }
 
@@ -259,6 +260,16 @@ export default function SettingsPage({ currentUser }: { currentUser: any }) {
             fetchData()
         } catch (error) {
             console.error('Failed to save assurance company:', error)
+        }
+    }
+
+    const handleSetDefaultAssurance = async (id: number) => {
+        try {
+            // @ts-ignore
+            await window.api.db.setDefaultAssuranceCompany({ id })
+            fetchData()
+        } catch (error) {
+            console.error('Failed to set default assurance company:', error)
         }
     }
 
@@ -410,6 +421,10 @@ export default function SettingsPage({ currentUser }: { currentUser: any }) {
                                         <div className="bg-[#1a1a1a] p-4 rounded-xl border border-white/5 hover:border-[#ffcc4d]/30 transition-colors group/card">
                                             <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1 group-hover/card:text-[#ffcc4d] transition-colors">ICE Identifier</p>
                                             <p className="text-white font-mono text-lg tracking-wide">{companies[activeCompanyIndex].ice || 'N/A'}</p>
+                                        </div>
+                                        <div className="bg-[#1a1a1a] p-4 rounded-xl border border-white/5 hover:border-[#ffcc4d]/30 transition-colors group/card">
+                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1 group-hover/card:text-[#ffcc4d] transition-colors">N° RC</p>
+                                            <p className="text-white font-mono text-lg tracking-wide">{companies[activeCompanyIndex].rc || 'N/A'}</p>
                                         </div>
                                         <div className="bg-[#1a1a1a] p-4 rounded-xl border border-white/5 hover:border-[#ffcc4d]/30 transition-colors group/card">
                                             <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1 group-hover/card:text-[#ffcc4d] transition-colors">CNSS Number</p>
@@ -652,19 +667,33 @@ export default function SettingsPage({ currentUser }: { currentUser: any }) {
                                         </div>
                                     </div>
                                     {isAdmin && (
-                                        <button
-                                            onClick={() => {
-                                                setDeleteModal({
-                                                    isOpen: true,
-                                                    type: 'assurance',
-                                                    id: company.id,
-                                                    name: company.name
-                                                } as any)
-                                            }}
-                                            className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-400 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={() => handleSetDefaultAssurance(company.id)}
+                                                className={cn(
+                                                    "p-1.5 rounded-lg transition-colors",
+                                                    company.is_default
+                                                        ? "text-[#ffcc4d] bg-[#ffcc4d]/10"
+                                                        : "text-slate-400 hover:text-[#ffcc4d] hover:bg-[#ffcc4d]/10"
+                                                )}
+                                                title={company.is_default ? "Default carrier" : "Set as default"}
+                                            >
+                                                <Star className={cn("w-4 h-4", company.is_default && "fill-[#ffcc4d]")} />
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setDeleteModal({
+                                                        isOpen: true,
+                                                        type: 'assurance',
+                                                        id: company.id,
+                                                        name: company.name
+                                                    } as any)
+                                                }}
+                                                className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-400 hover:text-red-400 transition-colors"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             ))}
@@ -967,24 +996,46 @@ export default function SettingsPage({ currentUser }: { currentUser: any }) {
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-[#1e1e1e] p-8 rounded-3xl w-full max-w-lg border border-white/10 max-h-[90vh] overflow-y-auto custom-scrollbar">
                             <h2 className="text-2xl font-bold text-white mb-6">{editingCompany ? 'Edit Company' : 'Add Company'}</h2>
                             <div className="space-y-4">
-                                <input placeholder="Company Name" className="bg-white/5 border border-white/10 rounded-xl p-3 text-white w-full focus:outline-none focus:border-[#ffcc4d]" value={companyForm.name} onChange={e => setCompanyForm({ ...companyForm, name: e.target.value })} />
-                                <input placeholder="Address" className="bg-white/5 border border-white/10 rounded-xl p-3 text-white w-full focus:outline-none focus:border-[#ffcc4d]" value={companyForm.address} onChange={e => setCompanyForm({ ...companyForm, address: e.target.value })} />
+                                <div>
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 block ml-1">Company Name</label>
+                                    <input placeholder="Company Name" className="bg-white/5 border border-white/10 rounded-xl p-3 text-white w-full focus:outline-none focus:border-[#ffcc4d]" value={companyForm.name} onChange={e => setCompanyForm({ ...companyForm, name: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 block ml-1">Address</label>
+                                    <input placeholder="Address" className="bg-white/5 border border-white/10 rounded-xl p-3 text-white w-full focus:outline-none focus:border-[#ffcc4d]" value={companyForm.address} onChange={e => setCompanyForm({ ...companyForm, address: e.target.value })} />
+                                </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <input placeholder="ICE" className="bg-white/5 border border-white/10 rounded-xl p-3 text-white w-full focus:outline-none focus:border-[#ffcc4d]" value={companyForm.ice} onChange={e => setCompanyForm({ ...companyForm, ice: e.target.value })} />
-                                    <input placeholder="IF" className="bg-white/5 border border-white/10 rounded-xl p-3 text-white w-full focus:outline-none focus:border-[#ffcc4d]" value={companyForm.if_num} onChange={e => setCompanyForm({ ...companyForm, if_num: e.target.value })} />
-                                    <input placeholder="CNSS" className="bg-white/5 border border-white/10 rounded-xl p-3 text-white w-full focus:outline-none focus:border-[#ffcc4d]" value={companyForm.cnss} onChange={e => setCompanyForm({ ...companyForm, cnss: e.target.value })} />
-                                    <input placeholder="Representant" className="bg-white/5 border border-white/10 rounded-xl p-3 text-white w-full focus:outline-none focus:border-[#ffcc4d]" value={companyForm.representant} onChange={e => setCompanyForm({ ...companyForm, representant: e.target.value })} />
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 block ml-1">ICE</label>
+                                        <input placeholder="ICE" className="bg-white/5 border border-white/10 rounded-xl p-3 text-white w-full focus:outline-none focus:border-[#ffcc4d]" value={companyForm.ice} onChange={e => setCompanyForm({ ...companyForm, ice: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 block ml-1">IF</label>
+                                        <input placeholder="IF" className="bg-white/5 border border-white/10 rounded-xl p-3 text-white w-full focus:outline-none focus:border-[#ffcc4d]" value={companyForm.if_num} onChange={e => setCompanyForm({ ...companyForm, if_num: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 block ml-1">CNSS</label>
+                                        <input placeholder="CNSS" className="bg-white/5 border border-white/10 rounded-xl p-3 text-white w-full focus:outline-none focus:border-[#ffcc4d]" value={companyForm.cnss} onChange={e => setCompanyForm({ ...companyForm, cnss: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 block ml-1">N° RC</label>
+                                        <input placeholder="N° RC" className="bg-white/5 border border-white/10 rounded-xl p-3 text-white w-full focus:outline-none focus:border-[#ffcc4d]" value={companyForm.rc} onChange={e => setCompanyForm({ ...companyForm, rc: e.target.value })} />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 block ml-1">Representant</label>
+                                        <input placeholder="Representant" className="bg-white/5 border border-white/10 rounded-xl p-3 text-white w-full focus:outline-none focus:border-[#ffcc4d]" value={companyForm.representant} onChange={e => setCompanyForm({ ...companyForm, representant: e.target.value })} />
+                                    </div>
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-bold text-slate-400 uppercase">Logo</label>
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 block ml-1">Logo</label>
                                     <button
                                         onClick={async () => {
                                             // @ts-ignore
                                             const result = await window.api.db.selectAndCopy()
                                             if (result) setCompanyForm({ ...companyForm, logo: result.previewPath })
                                         }}
-                                        className="w-full mt-2 bg-white/5 border border-white/10 rounded-xl py-3 px-4 flex justify-between items-center hover:bg-white/10 transition-colors"
+                                        className="w-full mt-1 bg-white/5 border border-white/10 rounded-xl py-3 px-4 flex justify-between items-center hover:bg-white/10 transition-colors"
                                     >
                                         <span className={companyForm.logo ? "text-white" : "text-slate-500"}>{companyForm.logo ? (companyForm.logo.split(/[/\\]/).pop()) : "Select Logo"}</span>
                                         <Building2 className="w-4 h-4 text-slate-400" />

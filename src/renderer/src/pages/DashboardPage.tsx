@@ -14,8 +14,10 @@ import {
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { cn } from '../lib/utils'
+import { useLanguage } from '../contexts/LanguageContext'
 
 export default function DashboardPage({ user }: { user: any }): JSX.Element {
+    const { t } = useLanguage()
     const [stats, setStats] = useState({ employees: 0, companies: 0 })
 
     useEffect(() => {
@@ -60,20 +62,20 @@ export default function DashboardPage({ user }: { user: any }): JSX.Element {
             <div className="relative flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
                 <div>
                     <h1 className="text-5xl font-bold bg-gradient-to-r from-white via-white to-white/40 bg-clip-text text-transparent font-['Outfit'] tracking-tight mb-4">
-                        Welcome in, {user?.name || 'Nixtio'}
+                        {t('welcome')} {user?.name || 'Nixtio'}
                     </h1>
                     <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
-                        <StatSummary label="Interviews" value="15%" color="bg-white/10" textColor="text-white" />
-                        <StatSummary label="Hired" value="15%" color="bg-[#ffcc4d]" textColor="text-black" />
-                        <StatSummary label="Project time" value="60%" color="bg-white/5 border border-white/10" isStriped />
-                        <StatSummary label="Output" value="10%" color="bg-white/5 border border-white/10" />
+                        <StatSummary label={t('interviews')} value="15%" color="bg-white/10" textColor="text-white" />
+                        <StatSummary label={t('hired')} value="15%" color="bg-[#ffcc4d]" textColor="text-black" />
+                        <StatSummary label={t('projectTime')} value="60%" color="bg-white/5 border border-white/10" isStriped />
+                        <StatSummary label={t('output')} value="10%" color="bg-white/5 border border-white/10" />
                     </div>
                 </div>
 
                 <div className="flex items-center gap-6 lg:gap-12 bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-[32px] shadow-2xl">
                     <HeaderMiniStat
                         count={stats.employees.toString()}
-                        label="Employe"
+                        label={t('employee')}
                         icon={<div className="flex -space-x-2">
                             {[1, 2, 3].map(i => (
                                 <div key={i} className="w-8 h-8 rounded-full border-2 border-[#141414] bg-gradient-to-br from-slate-700 to-slate-800" />
@@ -83,7 +85,7 @@ export default function DashboardPage({ user }: { user: any }): JSX.Element {
                     <div className="w-px h-10 bg-white/10 hidden sm:block" />
                     <HeaderMiniStat
                         count="56"
-                        label="Hirings"
+                        label={t('hirings')}
                         icon={<div className="w-10 h-10 rounded-2xl bg-[#ffcc4d]/10 flex items-center justify-center">
                             <Users className="w-5 h-5 text-[#ffcc4d]" />
                         </div>}
@@ -91,7 +93,7 @@ export default function DashboardPage({ user }: { user: any }): JSX.Element {
                     <div className="w-px h-10 bg-white/10 hidden sm:block" />
                     <HeaderMiniStat
                         count={stats.companies.toString()}
-                        label="Companies"
+                        label={t('companies')}
                         icon={<div className="w-10 h-10 rounded-2xl bg-purple-500/10 flex items-center justify-center">
                             <Monitor className="w-5 h-5 text-purple-400" />
                         </div>}
@@ -136,7 +138,7 @@ export default function DashboardPage({ user }: { user: any }): JSX.Element {
                         <div className="flex justify-between items-center mb-8">
                             <h4 className="text-xl font-bold text-white flex items-center gap-2">
                                 <Sparkles className="w-5 h-5 text-[#ffcc4d]" />
-                                Progress
+                                {t('progress')}
                             </h4>
                             <div className="p-2 bg-white/5 rounded-2xl group-hover:bg-[#ffcc4d] group-hover:text-black transition-all">
                                 <ArrowUpRight className="w-5 h-5" />
@@ -144,7 +146,7 @@ export default function DashboardPage({ user }: { user: any }): JSX.Element {
                         </div>
                         <div className="flex items-baseline gap-2 mb-10">
                             <span className="text-5xl font-bold text-white tracking-tight">6.1 h</span>
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-tight">Work Time<br />this week</span>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-tight">{t('workTime')}<br />{t('week')}</span>
                         </div>
                         <div className="flex items-end justify-between h-36 gap-3 pb-2">
                             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
@@ -170,7 +172,7 @@ export default function DashboardPage({ user }: { user: any }): JSX.Element {
                 <div className="col-span-12 lg:col-span-3">
                     <div className="bg-white/5 backdrop-blur-2xl rounded-[40px] p-8 h-full border border-white/10 shadow-2xl relative overflow-hidden flex flex-col items-center justify-between group">
                         <div className="flex justify-between items-center w-full mb-4">
-                            <h4 className="text-xl font-bold text-white">Time tracker</h4>
+                            <h4 className="text-xl font-bold text-white">{t('timeTracker')}</h4>
                             <div className="p-2 bg-white/5 rounded-2xl">
                                 <Clock className="w-5 h-5 text-slate-400" />
                             </div>
@@ -189,7 +191,7 @@ export default function DashboardPage({ user }: { user: any }): JSX.Element {
                             </svg>
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
                                 <p className="text-4xl font-black text-white tracking-tighter">02:35</p>
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Work Time</p>
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('workTime')}</p>
                             </div>
                         </div>
 
@@ -208,19 +210,19 @@ export default function DashboardPage({ user }: { user: any }): JSX.Element {
                 <div className="col-span-12 lg:col-span-3">
                     <div className="bg-[#141414] rounded-[40px] p-8 h-full border border-white/5 shadow-2xl flex flex-col">
                         <div className="flex justify-between items-start mb-6">
-                            <h4 className="text-xl font-bold text-white">Onboarding</h4>
+                            <h4 className="text-xl font-bold text-white">{t('onboarding')}</h4>
                             <span className="text-3xl font-black text-[#ffcc4d] tracking-tighter">18%</span>
                         </div>
 
                         <div className="flex gap-2 h-10 bg-white/5 rounded-2xl p-1.5 mb-8">
-                            <div className="bg-[#ffcc4d] flex-[0.3] rounded-xl flex items-center justify-center text-[10px] font-black text-black">Task</div>
+                            <div className="bg-[#ffcc4d] flex-[0.3] rounded-xl flex items-center justify-center text-[10px] font-black text-black">{t('tasks')}</div>
                             <div className="bg-white/10 flex-[0.5] rounded-xl" />
                             <div className="bg-white/5 flex-[0.2] rounded-xl" />
                         </div>
 
                         <div className="bg-white/5 border border-white/10 rounded-[32px] p-6 flex-1 shadow-inner">
                             <div className="flex justify-between items-center mb-6">
-                                <h5 className="font-bold text-lg text-white">Tasks</h5>
+                                <h5 className="font-bold text-lg text-white">{t('tasks')}</h5>
                                 <span className="text-2xl font-black tracking-tighter text-white/20">2/8</span>
                             </div>
                             <div className="space-y-5">
@@ -235,11 +237,11 @@ export default function DashboardPage({ user }: { user: any }): JSX.Element {
 
                 {/* Bottom Section */}
                 <div className="col-span-12 lg:col-span-3 space-y-6">
-                    <CollapsibleItem label="Pension contributions" />
+                    <CollapsibleItem label={t('pension')} />
 
                     <div className="bg-white/5 backdrop-blur-xl rounded-[32px] p-6 border border-white/10 shadow-xl group hover:bg-white/[0.08] transition-all">
                         <div className="flex justify-between items-center mb-6">
-                            <h4 className="text-lg font-bold text-white">Devices</h4>
+                            <h4 className="text-lg font-bold text-white">{t('devices')}</h4>
                             <button className="p-2 bg-white/5 rounded-xl hover:text-[#ffcc4d] transition-colors">
                                 <MoreHorizontal className="w-5 h-5" />
                             </button>
@@ -256,20 +258,20 @@ export default function DashboardPage({ user }: { user: any }): JSX.Element {
                         </div>
                     </div>
 
-                    <CollapsibleItem label="Compensation Summary" />
-                    <CollapsibleItem label="Employee Benefits" />
+                    <CollapsibleItem label={t('compensation')} />
+                    <CollapsibleItem label={t('benefits')} />
                 </div>
 
                 {/* Calendar Section */}
                 <div className="col-span-12 lg:col-span-9">
                     <div className="bg-[#141414] rounded-[48px] p-10 h-full border border-white/5 shadow-2xl relative overflow-hidden group">
                         <div className="flex flex-col sm:flex-row justify-between items-center gap-6 mb-12">
-                            <span className="text-xs font-black text-slate-600 uppercase tracking-[0.3em]">Previous</span>
+                            <span className="text-xs font-black text-slate-600 uppercase tracking-[0.3em]">{t('previous')}</span>
                             <div className="flex items-center gap-4 bg-white/5 px-8 py-3 rounded-full border border-white/10">
                                 <CalendarIcon className="w-5 h-5 text-[#ffcc4d]" />
                                 <h4 className="text-xl font-black text-white tracking-tight">September 2024</h4>
                             </div>
-                            <span className="text-xs font-black text-slate-600 uppercase tracking-[0.3em]">Next Month</span>
+                            <span className="text-xs font-black text-slate-600 uppercase tracking-[0.3em]">{t('nextMonth')}</span>
                         </div>
 
                         <div className="grid grid-cols-7 gap-6 mb-12">

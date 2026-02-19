@@ -7,8 +7,10 @@ import { Employee } from '../data/mockData'
 import AddEmployeeModal from '../components/AddEmployeeModal'
 import EditEmployeeModal from '../components/EditEmployeeModal'
 import DeleteConfirmModal from '../components/DeleteConfirmModal'
+import { useLanguage } from '../contexts/LanguageContext'
 
 export default function EmployeesPage(): JSX.Element {
+    const { t } = useLanguage()
     const [employees, setEmployees] = useState<Employee[]>([])
     const [companies, setCompanies] = useState<string[]>([])
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
@@ -19,6 +21,7 @@ export default function EmployeesPage(): JSX.Element {
     const [searchTerm, setSearchTerm] = useState('')
     const [viewMode, setViewMode] = useState<'En cours' | 'Sortie'>('En cours')
     const [selectedCompany, setSelectedCompany] = useState('')
+    const [imageRefreshKey, setImageRefreshKey] = useState(Date.now())
 
     const fetchData = async () => {
         try {
@@ -36,7 +39,13 @@ export default function EmployeesPage(): JSX.Element {
                     companyName: currentCompany,
                     status: viewMode
                 })
-                setEmployees(dbEmployees)
+                // Sort by ID (matricule) in ascending order
+                const sortedEmployees = dbEmployees.sort((a, b) => {
+                    const idA = parseInt(a.id) || 0
+                    const idB = parseInt(b.id) || 0
+                    return idA - idB
+                })
+                setEmployees(sortedEmployees)
             }
         } catch (error) {
             console.error('Failed to fetch data:', error)
@@ -55,6 +64,7 @@ export default function EmployeesPage(): JSX.Element {
     const handleAdd = async (newEmployee: Employee) => {
         try {
             await window.api.db.saveEmployee(newEmployee)
+            setImageRefreshKey(Date.now())
             await fetchData()
             setIsAddModalOpen(false)
         } catch (error) {
@@ -65,6 +75,7 @@ export default function EmployeesPage(): JSX.Element {
     const handleEdit = async (updatedEmployee: Employee) => {
         try {
             await window.api.db.saveEmployee(updatedEmployee)
+            setImageRefreshKey(Date.now())
             await fetchData()
             setIsEditModalOpen(false)
         } catch (error) {
@@ -82,6 +93,8 @@ export default function EmployeesPage(): JSX.Element {
         }
     }
 
+
+
     // Filter employees based on search term, view mode, and selected company
     const filteredEmployees = employees.filter(emp => {
         const matchesSearch = emp.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -94,6 +107,23 @@ export default function EmployeesPage(): JSX.Element {
 
         return matchesSearch && matchesViewMode && matchesCompany
     })
+
+    const handleNavigate = (direction: 'next' | 'prev') => {
+        if (!selectedEmployee) return
+        const currentIndex = filteredEmployees.findIndex(emp => emp.id === selectedEmployee.id)
+        if (direction === 'next' && currentIndex < filteredEmployees.length - 1) {
+            setSelectedEmployee(filteredEmployees[currentIndex + 1])
+        } else if (direction === 'prev' && currentIndex > 0) {
+            setSelectedEmployee(filteredEmployees[currentIndex - 1])
+        }
+    }
+
+    const navigationProps = {
+        onNext: () => handleNavigate('next'),
+        onPrevious: () => handleNavigate('prev'),
+        hasNext: selectedEmployee ? filteredEmployees.findIndex(emp => emp.id === selectedEmployee.id) < filteredEmployees.length - 1 : false,
+        hasPrevious: selectedEmployee ? filteredEmployees.findIndex(emp => emp.id === selectedEmployee.id) > 0 : false
+    }
 
     return (
         <div className="h-[calc(100vh-5rem)] w-full bg-[#141414] text-white p-6 space-y-8 animate-fade-in overflow-y-auto custom-scrollbar">
@@ -110,7 +140,7 @@ export default function EmployeesPage(): JSX.Element {
                                 <Building2 className="w-5 h-5" />
                             </div>
                             <div className="flex-1">
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Company</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('company')}</p>
                                 <p className="text-sm font-bold text-white truncate">{selectedCompany}</p>
                             </div>
                             <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
@@ -138,7 +168,7 @@ export default function EmployeesPage(): JSX.Element {
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                         <input
                             type="text"
-                            placeholder="Search employees..."
+                            placeholder={t('searchEmployees')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-white/5 border border-white/5 focus:border-white/10 rounded-2xl pl-12 pr-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-0 transition-all"
@@ -155,7 +185,7 @@ export default function EmployeesPage(): JSX.Element {
                             className="flex items-center gap-2 bg-[#ffcc4d] hover:bg-[#ffcc4d]/90 text-black px-5 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-[#ffcc4d]/20 active:scale-95"
                         >
                             <UserPlus className="w-5 h-5" />
-                            <span className="hidden sm:inline">Add Employee</span>
+                            <span className="hidden sm:inline">{t('addEmployee')}</span>
                         </button>
                     </div>
                 </div>
@@ -167,7 +197,7 @@ export default function EmployeesPage(): JSX.Element {
                         className={`pb-3 text-sm font-bold tracking-wide transition-all relative ${viewMode === 'En cours' ? 'text-[#ffcc4d]' : 'text-slate-400 hover:text-white'
                             }`}
                     >
-                        Personnel En cours
+                        {t('enCoursStaff')}
                         {viewMode === 'En cours' && (
                             <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#ffcc4d] rounded-t-full" />
                         )}
@@ -177,7 +207,7 @@ export default function EmployeesPage(): JSX.Element {
                         className={`pb-3 text-sm font-bold tracking-wide transition-all relative ${viewMode === 'Sortie' ? 'text-[#ffcc4d]' : 'text-slate-400 hover:text-white'
                             }`}
                     >
-                        Personnel Sortie
+                        {t('sortieStaff')}
                         {viewMode === 'Sortie' && (
                             <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#ffcc4d] rounded-t-full" />
                         )}
@@ -191,6 +221,7 @@ export default function EmployeesPage(): JSX.Element {
                     <EmployeeCard
                         key={emp.id}
                         employee={emp}
+                        refreshKey={imageRefreshKey}
                         onClick={() => handleCardClick(emp)}
                         onEdit={() => { setSelectedEmployee(emp); setIsEditModalOpen(true); }}
                         onDelete={() => { setSelectedEmployee(emp); setIsDeleteModalOpen(true); }}
@@ -204,7 +235,7 @@ export default function EmployeesPage(): JSX.Element {
                     <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4">
                         <UserPlus className="w-10 h-10 opacity-20" />
                     </div>
-                    <p className="text-lg font-medium text-white/50">No employees found in "{viewMode}" for "{selectedCompany}"</p>
+                    <p className="text-lg font-medium text-white/50">{t('noEmployeesFound')} in "{viewMode}" for "{selectedCompany}"</p>
                 </div>
             )}
 
@@ -212,6 +243,8 @@ export default function EmployeesPage(): JSX.Element {
                 isOpen={isViewModalOpen}
                 employee={selectedEmployee}
                 onClose={() => setIsViewModalOpen(false)}
+                refreshKey={imageRefreshKey}
+                {...navigationProps}
             />
 
             <AddEmployeeModal
@@ -227,6 +260,8 @@ export default function EmployeesPage(): JSX.Element {
                 employee={selectedEmployee}
                 onClose={() => setIsEditModalOpen(false)}
                 onSave={handleEdit}
+                refreshKey={imageRefreshKey}
+                {...navigationProps}
             />
 
             {/* Delete Confirmation Modal */}

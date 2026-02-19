@@ -18,6 +18,8 @@ export interface Employee {
   rib: string
   dateSortie?: string
   motif?: string
+  contratPath?: string
+  engDomicilePath?: string
 }
 
 export const mockEmployees: Employee[] = [

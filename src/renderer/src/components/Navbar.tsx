@@ -1,30 +1,35 @@
-import { Bell, Settings } from 'lucide-react'
+import { Settings, Globe } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '../lib/utils'
-
-const navItems = [
-    { label: 'Dashboard', id: 'dashboard' },
-    { label: 'People', id: 'people', active: true },
-    { label: 'Hiring', id: 'hiring' },
-    { label: 'Devices', id: 'devices' },
-    { label: 'Apps', id: 'apps' },
-    { label: 'Salary', id: 'salary' },
-    { label: 'Calendar', id: 'calendar' },
-    { label: 'Reviews', id: 'reviews' },
-]
+import { PageId } from '../App'
+import { useLanguage } from '../contexts/LanguageContext'
 
 interface NavbarProps {
-    onNavigate: (page: 'dashboard' | 'people' | 'settings') => void
-    currentPage: 'dashboard' | 'people' | 'settings'
+    onNavigate: (page: PageId) => void
+    currentPage: PageId
     user: any
 }
 
 export default function Navbar({ onNavigate, currentPage, user }: NavbarProps): JSX.Element {
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'people' | 'settings'>(currentPage)
+    const { language, setLanguage, t } = useLanguage()
+    const [activeTab, setActiveTab] = useState<PageId>(currentPage)
 
-    const handleNavigate = (id: 'dashboard' | 'people' | 'settings') => {
+    const navItems = [
+        { label: t('dashboard'), id: 'dashboard' },
+        { label: t('people'), id: 'people' },
+        { label: t('hiring'), id: 'hiring' },
+        { label: t('payroll'), id: 'payroll' },
+        { label: t('transport'), id: 'transport' },
+        { label: 'Assurance', id: 'assurance' },
+    ]
+
+    const handleNavigate = (id: PageId) => {
         onNavigate(id)
         setActiveTab(id)
+    }
+
+    const toggleLanguage = () => {
+        setLanguage(language === 'fr' ? 'en' : 'fr')
     }
 
     return (
@@ -36,7 +41,7 @@ export default function Navbar({ onNavigate, currentPage, user }: NavbarProps): 
                 {navItems.map((item) => (
                     <button
                         key={item.id}
-                        onClick={() => handleNavigate(item.id as 'dashboard' | 'people')}
+                        onClick={() => handleNavigate(item.id as PageId)}
                         className={cn(
                             "px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300",
                             activeTab === item.id && item.id !== 'settings'
@@ -62,9 +67,12 @@ export default function Navbar({ onNavigate, currentPage, user }: NavbarProps): 
                 >
                     <Settings className="w-5 h-5" />
                 </button>
-                <button className="p-2.5 bg-[#ffcc4d] rounded-full text-[#1e1e1e] hover:bg-[#e6b800] transition-colors shadow-lg shadow-[#ffcc4d]/20 relative">
-                    <Bell className="w-5 h-5" />
-                    <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-[#1e1e1e] rounded-full border-2 border-[#ffcc4d]"></span>
+                <button
+                    onClick={toggleLanguage}
+                    className="flex items-center gap-2 h-[42px] px-4 bg-[#ffcc4d] rounded-full text-[#1e1e1e] hover:bg-[#e6b800] transition-all shadow-lg shadow-[#ffcc4d]/20 group active:scale-95"
+                >
+                    <Globe className="w-4 h-4" />
+                    <span className="text-sm font-black tracking-tighter uppercase">{language}</span>
                 </button>
                 <div className="h-10 w-[1px] bg-white/10 mx-1"></div>
                 <button className="p-1 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 transition-all group">
